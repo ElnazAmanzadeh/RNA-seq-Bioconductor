@@ -1,0 +1,14 @@
+#For this analysis, we will need a certain number of packages.
+#First of all make sure that you have the latest version of R and Rstudio installed.
+#Then use the following commands to install the required libraries.
+
+install.packages(c("BiocManager", "remotes"))
+BiocManager::install(c("tidyverse", "SummarizedExperiment",
+                       "ExploreModelMatrix", "AnnotationDbi", "org.Hs.eg.db", 
+                       "org.Mm.eg.db", "csoneson/ConfoundingExplorer",
+                       "DESeq2", "vsn", "ComplexHeatmap", "hgu95av2.db",
+                       "RColorBrewer", "hexbin", "cowplot", "iSEE",
+                       "clusterProfiler", "enrichplot", "kableExtra",
+                       "msigdbr", "gplots", "ggplot2", "simplifyEnrichment",
+                       "apeglm", "microbenchmark", "Biostrings",
+                       "SingleCellExperiment"))
