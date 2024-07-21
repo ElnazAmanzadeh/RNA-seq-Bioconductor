@@ -1,0 +1,27 @@
+#Download Count data file
+
+download.file(
+    url = "https://github.com/carpentries-incubator/bioc-rnaseq/raw/main/episodes/data/GSE96870_counts_cerebellum.csv", 
+    destfile = "data/GSE96870_counts_cerebellum.csv"
+)
+
+# Download Col data file
+
+download.file(
+    url = "https://github.com/carpentries-incubator/bioc-rnaseq/raw/main/episodes/data/GSE96870_coldata_cerebellum.csv",
+destfile = "data/GSE96870_coldata_cerebellum.csv"
+)
+
+#Download Coll data of Cerebrullum
+download.file(
+    url = "https://github.com/carpentries-incubator/bioc-rnaseq/raw/main/episodes/data/GSE96870_coldata_all.csv",
+destfile = "data/GSE96870_coldata_all.csv"
+)
+
+
+#donwload row ranges file
+
+download.file(
+    url = "https://github.com/carpentries-incubator/bioc-rnaseq/raw/main/episodes/data/GSE96870_rowranges.tsv",
+destfile = "data/GSE96870_rowranges.tsv"
+)
