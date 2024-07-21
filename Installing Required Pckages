@@ -1,1 +1,15 @@
+## Install AnnotationDbi
 
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("AnnotationDbi")
+
+##Install org.Mm.db
+BiocManager::install("org.Mm.eg.db")
+
+## Install  hgu95av2.db
+BiocManager::install("hgu95av2.db")
+
+## Install SummarizedExperiment
+BiocManager::install("SummarizedExperiment")
