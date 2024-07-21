@@ -13,3 +13,13 @@ BiocManager::install("hgu95av2.db")
 
 ## Install SummarizedExperiment
 BiocManager::install("SummarizedExperiment")
+
+
+## AND Call the libraries
+
+suppressPackageStartupMessages({
+  library(AnnotationDbi)
+  library(org.Mm.eg.db)
+  library(hgu95av2.db)
+  library(SummarizedExperiment)
+})
