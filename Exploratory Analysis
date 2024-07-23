@@ -1,0 +1,119 @@
+#~~~~~~~~~~~~~~
+##mapIDs Function
+
+mapIds(annopkg, keys, column, keytype, multiVals)
+
+mapIds(org.Mm.eg.db, keys= "497097", column = "SYMBOL", keytype = "ENTREZID")
+
+
+keys <- head(keys(hgu95av2.db, "ENTREZID"))
+last <- function(x){x[[length(x)]]}
+
+mapIds(hgu95av2.db, keys = keys, column = "ALIAS", keytype = "ENTREZID")
+
+mapIds(hgu95av2.db, keys = keys, column = "ALIAS", keytype = "ENTREZID", multiVals = last)
+
+mapIds(hgu95av2.db, keys = keys, column = "ALIAS", keytype = "ENTREZID", multiVals = "list")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#loading libraries
+
+suppressPackageStartupMessages({
+  library(SummarizedExperiment)
+  library(DESeq2)
+  library(vsn)
+  library(ggplot2)
+  library(ComplexHeatmap)
+  library(RColorBrewer)
+  library(hexbin)
+  library(iSEE)
+})
+
+
+se <- readRDS("data/GSE96870_se.rds")
+
+se
+
+
+#remove non-expressed genes
+
+nrow(se)
+
+se <- se[rowSums(assay(se, "counts")) > 5, ]
+
+nrow(se)
+
+
+#Library size difference
+#Add in the sum of all counts
+se$libSize <- colSums(assay(se))
+
+colData(se) |>
+  as.data.frame() |>
+  ggplot(aes(x = Label, y = libSize / 1e6, fill = Group )) +
+  geom_bar(stat = "identity") + theme_bw() + 
+  labs(x = "Sample", y = "Total count in milliions") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+
+#convert se object to Deseq2 object
+dds <- DESeq2::DESeqDataSet(se, design = ~sex + time)
+
+dds <- estimateSizeFactors(dds)
+ 
+#plot the size factors against library size
+
+ggplot(data.frame(libSize = colSums(assay(dds)),
+       sizeFactor = sizeFactors(dds),
+       Group = dds$Group),
+       aes(x = libSize, y = sizeFactor, col = Group)) +
+  geom_point(size = 5) + theme_bw() +
+  labs(x = "Library size", y = "Size factor")
+
+meanSdPlot(assay(dds), ranks = FALSE)
+
+vsd <- DESeq2::vst(dds, blind = TRUE)
+meanSdPlot(assay(vsd), ranks = FALSE)
+
+
+dst <- dist(t(assay(vsd)))
+colors <- colorRampPalette(brewer.pal(9, "Blues")) (255)
+ComplexHeatmap::Heatmap(
+as.matrix(dst),
+col = colors,
+name = "Euclidean\nDistance",
+cluster_rows = hclust(dst),
+cluster_columns = hclust(dst),
+bottom_annotation = columnAnnotation(
+  sex = vsd$sex,
+  time = vsd$time,
+  col = list(sex = c(Female = "red", Male = "blue"),
+             time = c(Day0 = "yellow", Day4 = "forestgreen", Day8 = "purple")))
+)
+
+ #PCA analysis
+
+pcaData <- DESeq2::plotPCA(vsd, intgroup = c("sex", "time"),
+                           returnData = TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+
+
+ggplot(pcaData, aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = sex, shape = time), size = 5) +
+  theme_minimal() +
+  xlab(paste0("PC1: ", percentVar[1], "% variance")) +
+  ylab(paste0("PC2", percentVar[2], "% variance")) + 
+  coord_fixed() +
+  scale_color_manual(values = c(Male = "blue", Female = "red"))
