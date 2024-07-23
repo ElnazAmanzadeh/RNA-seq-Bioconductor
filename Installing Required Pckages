@@ -23,3 +23,35 @@ suppressPackageStartupMessages({
   library(hgu95av2.db)
   library(SummarizedExperiment)
 })
+
+#Packages required for exploratory analysis
+## Install DESeq2
+BiocManager::install("DESeq2")
+
+
+## Install vsn
+BiocManager::install("vsn")
+
+
+## Install RColorBrewer
+BiocManager::install("RColorBrewer")
+
+## Install hexbin
+BiocManager::install("hexbin")
+
+## Install iSEE
+BiocManager::install("iSEE")
+
+
+#loading Exploratory Analysis libraries
+
+suppressPackageStartupMessages({
+  library(SummarizedExperiment)
+  library(DESeq2)
+  library(vsn)
+  library(ggplot2)
+  library(ComplexHeatmap)
+  library(RColorBrewer)
+  library(hexbin)
+  library(iSEE)
+})
