@@ -1,0 +1,95 @@
+#Deseq script
+
+suppressPackageStartupMessages({
+  library(SummarizedExperiment)
+  library(DESeq2)
+  library(ggplot2)
+  library(ExploreModelMatrix)
+  library(cowplot)
+  library(ComplexHeatmap)
+  library(apeglm)
+})
+
+
+#Creating DESeq2 object
+
+dds <- DESeq2::DESeqDataSet(se, design = ~ sex + time)
+
+#Normalization
+dds <- estimateSizeFactors(dds)
+
+
+
+#var = m +(teta)m**2
+
+dds <- estimateDispersions(dds)
+
+plotDispEsts(dds)
+
+
+#Wald test: log(mi) = beta(0) + xj (beta)T
+
+dds <- nbinomWaldTest(dds)
+
+#Day 8 vs Day 0
+resTime <- results(dds, contrast = c("time", "Day8", "Day0"))
+
+
+#overall results
+
+result_overall <- results(dds)
+
+
+#MA plot
+
+plotMA(resTime)
+
+
+resTimeLfc <- lfcShrink(dds, coef = "time_Day8_vs_Day0", res = resTime)
+
+
+plotMA(resTimeLfc)
+
+
+# visualize selected set of genes
+
+#Transform counts
+
+vsd <- vst(dds, blind = TRUE)
+
+
+#Get Top DE genes
+
+genes <- resTime[order(resTime$pvalue), ] |>
+  head(10) |>
+  rownames()
+
+heatmapData <- assay(vsd)[genes, ]
+
+#Scale counts for visualization
+heatmapData <- t(scale(t(heatmapData)))
+
+
+#Add annotation
+heatmapColAnnot <- data.frame(colData(vsd)[, c("time", "sex")])
+heatmapColAnnot <- HeatmapAnnotation(df = heatmapColAnnot)
+
+
+# plot as heatmap
+
+ComplexHeatmap::Heatmap(heatmapData,
+                        top_annotation = heatmapColAnnot,
+                        cluster_rows = TRUE, cluster_columns = FALSE)
+
+
+
+#Output results
+
+head(as.data.frame(resTime))
+head(as.data.frame(rowranges))
+
+
+temp <- cbind(as.data.frame(rowRanges(se)),
+              as.data.frame(resTime))
+
+write.csv(temp, file = "output/Day8vsDay0.csv")
