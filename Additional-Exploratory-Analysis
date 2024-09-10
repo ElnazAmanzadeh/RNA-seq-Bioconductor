@@ -1,0 +1,192 @@
+
+suppressPackageStartupMessages({
+  library(SummarizedExperiment)
+  library(ExploreModelMatrix)
+  library(dplyr)
+  library(DESeq2)
+})
+
+
+meta <- read.csv("data/GSE96870_coldata_all.csv", row.names = 1)
+
+
+table(meta$time, meta$infection)
+
+table(meta$age)
+
+
+vd <- VisualizeDesign(sampleData = meta, 
+                      designFormula = ~ tissue + time + sex)
+
+vd$cooccurrenceplots$`tissue = Cerebellum`
+
+vd$cooccurrenceplots$`tissue = Spinalcord`
+
+
+#subset metadata
+
+meta_noninf_spc <- meta %>% filter(time == "Day0" &
+                                     tissue == "Spinalcord")
+
+vd <- VisualizeDesign(sampleData = meta_noninf_spc,
+                      designFormula = ~sex)
+
+vd$designmatrix
+vd$plotlist
+
+model.matrix(~ sex, data = meta_noninf_spc)
+
+
+
+
+
+
+
+
+#Factorial design without interactions
+meta_noninf <- meta %>% filter(time == "Day0")
+
+vd <- VisualizeDesign(sampleData = meta_noninf, 
+                      designFormula = ~ sex + tissue)
+
+vd$designmatrix
+vd$plotlist
+
+
+#Factorial desing with interactions
+meta_noninf <- meta %>% filter(time == "Day0")
+
+vd <- VisualizeDesign(sampleData = meta_noninf,
+                      designFormula = ~ sex * tissue)
+
+vd$designmatrix
+vd$plotlist
+
+
+
+
+#Combining multiple factors into one
+
+meta_noninf <- meta %>% filter(time == "Day0")
+
+meta_noninf$sex_tissue <- paste0(meta_noninf$sex, "_", meta_noninf$tissue)
+
+vd <- VisualizeDesign(sampleData = meta_noninf,
+                      designFormula = ~ 0 + sex_tissue)
+
+vd$designmatrix
+vd$plotlist
+
+# Paired Design
+
+meta_fem_day0 <- meta %>% filter(sex == "Female" &
+                                   time == "Day0")
+
+meta_fem_day0$mouse <- factor(meta_fem_day0$mouse)
+
+
+vd <- VisualizeDesign(sampleData = meta_fem_day0,
+                      designFormula = ~ mouse + tissue)
+vd$designmatrix
+
+vd$plotlist
+
+
+# within and between subjects comparisons
+
+
+meta_fem_day04 <- meta %>% filter(sex == "Female" &
+                                    time %in% c("Day0", "Day4")) %>%
+  droplevels()
+
+meta_fem_day04$mouse <- factor(meta_fem_day04$mouse)
+
+design <- model.matrix(~mouse, data = meta_fem_day04)
+
+design <- cbind(design,
+                Spc.Day0 = meta_fem_day04$tissue == "Spinalcord" &
+                  meta_fem_day04$time == "Day0",
+                Spc.Day4 = meta_fem_day04$tissue == "Spinalcord" &
+                  meta_fem_day04$time == "Day4")
+
+rownames(design) <- rownames(meta_fem_day04)
+
+design
+
+
+vd <- VisualizeDesign(sampleData = meta_fem_day04 %>%
+                        select(time, tissue, mouse),
+                      designFormula = NULL,
+                      designMatrix = design, flipCoordFitted = FALSE)
+vd$designmatrix
+vd$plotlist
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#How to run Deseq2 analysis
+
+dds <- DESeq2::DESeqDataSet(se, design = ~ sex + time)
+dds <- DESeq(dds)
+
+attr(dds, "modelMatrix")
+
+resultsNames(dds)
+
+vd <- VisualizeDesign(sampleData = colData(dds) [, c("sex", "time")],
+                      designMatrix = attr(dds, "modelMatrix"),
+                                          flipCoordFitted = TRUE)
+vd$designmatrix
+
+
+
+resTime <- results(dds, contrast = c("time", "Day0", "Day8"))
+
+resTimeNum <- results(dds, contrast = c(0, 0, 0, 1))
+
+summary(resTimeNum)
+summary(resTime)
+
+##lofFC
+plot(resTime$log2FoldChange, resTimeNum$log2FoldChange)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+dds <- DESeq2::DESeqDataSet(se, design = ~sex * time)
+dds <- DESeq(dds)
+
+
+attr(dds, "modelMatrix")
+
+
+
+vd <- VisualizeDesign(sampleData = colData(dds)[, c("time", "sex")],
+                      designMatrix = attr(dds, "modelMatrix"),
+                      flipCoordFitted = TRUE)
+vd$designmatrix
+vd$plotlist
+
+
+## Day8 vs Day 0, female
+
+resTimeFemale <- results(dds, contrast = c("time", "Day0", "Day8"))
+
+
+resTimeInt <- results(dds, name = "sexMale.timeDay8")
+
+se$sex_time <- paste0(se$sex, "_", se$time)
+
+dds <- DESeq2::DESeqDataSet(se, design = ~0 + sex_time)
+dds <- DESeq(dds)
+
+attr(dds, "modelMatrix")
+
+vd <- VisualizeDesign(sampleData = colData(dds)[, c("time", "sex")],
+                     designMatrix = attr(dds, "modelMatrix"),
+                     flipCoordFitted = TRUE)
+
+vd$designmatrix
+vd$plotlist
